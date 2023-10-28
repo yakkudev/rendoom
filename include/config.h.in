@@ -1,0 +1,4 @@
+#pragma once
+#define PROJECT_VERSION_MAJOR @rendoom_VERSION_MAJOR@ 
+#define PROJECT_VERSION_MINOR @rendoom_VERSION_MINOR@ 
+

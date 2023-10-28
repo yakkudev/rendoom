@@ -1,0 +1,15 @@
+# CMake
+build
+compile_commands.json
+information.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+.cache
+
+# IDE
+.idea
+.vscode
