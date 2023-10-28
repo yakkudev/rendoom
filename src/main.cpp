@@ -11,11 +11,11 @@
 using rendoom::Color;
 
 static double pRot = 0;
-static double pX = 3.456;
-static double pY = 2.345;
+static double pX = 3.5;
+static double pY = 2.5;
 static double fov = PI / 4;
 static double moveSpeed = 0.05;
-static double rotSpeed = 0.075;
+static double rotSpeed = 0.025;
 
 void handleEvents(sf::RenderWindow& window, sf::VideoMode vm) {
 	sf::Event Event;
@@ -31,30 +31,36 @@ void handleEvents(sf::RenderWindow& window, sf::VideoMode vm) {
 		case sf::Event::KeyPressed:
 			if (Event.key.code == sf::Keyboard::Escape)
 				window.close();
-			if (Event.key.code == sf::Keyboard::Left)
-				pRot -= rotSpeed;
-			if (Event.key.code == sf::Keyboard::Right)
-				pRot += rotSpeed;
-			if (Event.key.code == sf::Keyboard::W) {
-				pX += moveSpeed * cos(pRot);
-				pY += moveSpeed * sin(pRot);
-			}
-			if (Event.key.code == sf::Keyboard::S) {
-				pX -= moveSpeed * cos(pRot);
-				pY -= moveSpeed * sin(pRot);
-			}
-			if (Event.key.code == sf::Keyboard::A) {
-				pX += moveSpeed * sin(pRot);
-				pY -= moveSpeed * cos(pRot);
-			}
-			if (Event.key.code == sf::Keyboard::D) {
-				pX -= moveSpeed * sin(pRot);
-				pY += moveSpeed * cos(pRot);
-			}
 			break;
 		default:
 			break;
 		}
+	}
+}
+
+void handleMovement() {
+	// Rotation
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+		pRot -= rotSpeed;
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+		pRot += rotSpeed;
+
+	// Movement
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W)) {
+		pX += moveSpeed * cos(pRot);
+		pY += moveSpeed * sin(pRot);
+	}
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+		pX -= moveSpeed * cos(pRot);
+		pY -= moveSpeed * sin(pRot);
+	}
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+		pX += moveSpeed * sin(pRot);
+		pY -= moveSpeed * cos(pRot);
+	}
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+		pX -= moveSpeed * sin(pRot);
+		pY += moveSpeed * cos(pRot);
 	}
 }
 
@@ -80,6 +86,10 @@ void drawRect(sf::Uint8* pixels, int screenWidth, int x, int y, int width, int h
 	drawRect(pixels, screenWidth, x, y, width, height, color.r, color.g, color.b);
 }
 
+float clamp(float n, float lower, float upper) {
+	return std::max(lower, std::min(n, upper));
+}
+
 
 
 int main(int argc, char* argv[]) {
@@ -89,18 +99,18 @@ int main(int argc, char* argv[]) {
 	const char map[] = \
 		"0000222222220000"\
 		"1              0"\
-		"1      11111   0"\
-		"1     0        0"\
-		"0     0  1110000"\
-		"0     3        0"\
-		"0   10000      0"\
-		"0   0   11100  0"\
-		"0   0   0      0"\
-		"0   0   1  00000"\
-		"0       1      0"\
-		"2       1      0"\
+		"111111111111   0"\
+		"1              0"\
+		"0        3333330"\
+		"0              0"\
+		"0   30000      0"\
+		"0   1      00  0"\
 		"0       0      0"\
-		"0 0000000      0"\
+		"0       1     00"\
+		"0   1   1      0"\
+		"2   1   1      0"\
+		"0   1   0      0"\
+		"0 000   0      0"\
 		"0              0"\
 		"0002222222200000"; // game map
 
@@ -141,6 +151,7 @@ int main(int argc, char* argv[]) {
 	while (window.isOpen()) {
 		frame++;
 		handleEvents(window, vm);
+		handleMovement();
 
 		// Clear buffer so we don't draw over the previous frame
 		drawRect(pixels, screenX, 0, 0, screenX, screenY, Color(0, 0, 0));
@@ -155,11 +166,13 @@ int main(int argc, char* argv[]) {
 				int cy = pY + c * sin(angle);
 
 				char block = map[int(cx) + int(cy) * mapX];
-				if (block != ' ') { // our ray touches a wall, so draw the vertical column to create an illusion of 3D
-					int column_height = mapY / c * 3;
+				if (block == map[int(pX) + int(pY) * mapX]) continue; // Skip if in same block as player
+				if (block != ' ') { // Hit a wall
+					float x = screenY / c;
+					int column_height = clamp(x, 0, screenY);
 					// Calculate color
 					const float fogIntensity = 10;
-					const float fog = fabs(1 - c / fogIntensity);
+					const float fog = clamp(1 - c / fogIntensity, 0, 1);
 					int r, g, b = 0;
 					r = Color::palette[block % 8].r * fog;
 					g = Color::palette[block % 8].g * fog;
