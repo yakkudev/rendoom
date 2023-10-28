@@ -13,7 +13,7 @@ using rendoom::Color;
 static double pRot = 0;
 static double pX = 3.5;
 static double pY = 2.5;
-static double fov = PI / 4;
+static double fov = (PI / 4);
 static double moveSpeed = 0.05;
 static double rotSpeed = 0.025;
 
@@ -62,6 +62,13 @@ void handleMovement() {
 		pX -= moveSpeed * sin(pRot);
 		pY += moveSpeed * cos(pRot);
 	}
+
+	// Restart
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::R)) {
+		pRot = 0;
+		pX = 3.5;
+		pY = 2.5;
+	}
 }
 
 void setPixel(sf::Uint8* pixels, int width, int x, int y, int r, int g, int b) {
@@ -90,10 +97,7 @@ float clamp(float n, float lower, float upper) {
 	return std::max(lower, std::min(n, upper));
 }
 
-
-
 int main(int argc, char* argv[]) {
-
 	const int mapX = 16; // map width
 	const int mapY = 16; // map height
 	const char map[] = \
@@ -158,8 +162,10 @@ int main(int argc, char* argv[]) {
 
 		// Raycasting
 		for (int ray = 0; ray < screenX; ray++) {
+			// Calculate ray angle
 			double angle = (pRot - fov / 2) + (double)ray / (double)screenX * fov;
 
+			// Step along the ray
 			double c = 0.01;
 			for (; c < 20; c += .01) {
 				int cx = pX + c * cos(angle);
@@ -168,15 +174,17 @@ int main(int argc, char* argv[]) {
 				char block = map[int(cx) + int(cy) * mapX];
 				if (block == map[int(pX) + int(pY) * mapX]) continue; // Skip if in same block as player
 				if (block != ' ') { // Hit a wall
-					float x = screenY / c;
-					int column_height = clamp(x, 0, screenY);
-					// Calculate color
+					float z = screenY / (c * cos(pRot - angle));
+					int column_height = clamp(z, 0, screenY); // Clamp to avoid a crash
+					// Calculate fog color
 					const float fogIntensity = 10;
 					const float fog = clamp(1 - c / fogIntensity, 0, 1);
+
 					int r, g, b = 0;
 					r = Color::palette[block % 8].r * fog;
 					g = Color::palette[block % 8].g * fog;
 					b = Color::palette[block % 8].b * fog;
+					// Draw column
 					drawRect(pixels, screenX, screenX + ray, screenY / 2 - column_height / 2, 1, column_height, r, g, b);
 					break;
 				}
